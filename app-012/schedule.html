@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>代煎排期 · 中药房</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1208;
+      color: #e8d9c0;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    a { color: #d4a574; }
+    h1 { color: #d4a574; font-size: 22px; margin-bottom: 4px; }
+    h2 { color: #c99a5b; font-size: 16px; margin: 18px 0 8px; border-left: 3px solid #8a5a2b; padding-left: 8px; }
+    .sub { color: #9c8a6d; font-size: 13px; margin-bottom: 16px; }
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; max-width: 1280px; margin: 0 auto; }
+    .panel {
+      background: #2a1f12;
+      border: 1px solid #4a3620;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    label { display: block; font-size: 13px; color: #bfa982; margin: 8px 0 2px; }
+    input, select, button {
+      width: 100%;
+      background: #1f1609;
+      border: 1px solid #5a4427;
+      color: #e8d9c0;
+      border-radius: 4px;
+      padding: 7px 9px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input[type="date"] { color-scheme: dark; }
+    button { cursor: pointer; background: #6b4420; margin-top: 10px; font-weight: bold; }
+    button:hover { background: #83562a; }
+    button.ghost { background: transparent; border-color: #7a5a33; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .closed-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip {
+      background: #3d2b14;
+      border: 1px solid #6b4420;
+      border-radius: 12px;
+      padding: 1px 8px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip button { width: auto; background: none; border: none; color: #c98; padding: 0; margin: 0; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #3d2d18; padding: 6px 8px; text-align: center; }
+    th { background: #332511; color: #d4a574; position: sticky; top: 0; }
+    td.name { text-align: left; }
+    tr.changed td { background: #3d3320; }
+    tr.changed td:first-child { box-shadow: inset 3px 0 0 #e0b341; }
+    .badge { font-size: 11px; padding: 0 5px; border-radius: 8px; margin-left: 4px; }
+    .badge.info { background: #2c3e50; color: #9ec; }
+    .badge.warn { background: #5a2a1c; color: #f5b39a; }
+    .datecell { cursor: pointer; }
+    .datecell:hover { background: #4a3820; }
+    .datecell.pinned { color: #e0b341; font-weight: bold; }
+    .datecell.closed-hit { text-decoration: line-through #c87f5a wavy; }
+    .alerts { margin-bottom: 12px; }
+    .alert {
+      background: #4a2415;
+      border: 1px solid #a05a30;
+      color: #ffd9b0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .alert.info { background: #24344a; border-color: #4170a0; color: #c5dff5; }
+    .notes { font-size: 11px; color: #a8947a; text-align: left; margin-top: 3px; }
+    .notes div { margin-top: 2px; }
+    .notes .w { color: #e89a6a; }
+    .batch-tag { font-size: 11px; color: #8ab0c9; }
+    dialog {
+      background: #2a1f12;
+      border: 1px solid #6b4420;
+      border-radius: 8px;
+      color: #e8d9c0;
+      padding: 18px;
+      min-width: 320px;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.55); }
+    .legend { font-size: 12px; color: #9c8a6d; margin: 6px 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div>
+      <h1>代煎排期</h1>
+      <div class="sub">从开喝日往回排：抓药 → 送煎 → 一早取走；歇业日前移，炉满顺延。<br/><a href="./index.html">← 返回戥子称药</a></div>
+
+      <div class="panel">
+        <h2 style="margin-top:0">药房设置</h2>
+        <label>一炉代煎容量（剂）</label>
+        <input id="cfg-capacity" type="number" min="1" step="1" />
+        <div class="row2">
+          <div>
+            <label>抓药提前（天）</label>
+            <input id="cfg-gather" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label>代煎耗时（天）</label>
+            <input id="cfg-decoct" type="number" min="0" step="1" />
+          </div>
+        </div>
+        <label>同一取药日病人提醒阈值（位，0=不提醒）</label>
+        <input id="cfg-pickup" type="number" min="0" step="1" />
+        <label>歇业日</label>
+        <input id="cfg-closed-date" type="date" />
+        <button id="cfg-closed-add" class="ghost">添加歇业日</button>
+        <div id="cfg-closed-list" class="closed-list"></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2 style="margin-top:0">新增病人</h2>
+        <label>姓名</label>
+        <input id="p-name" placeholder="如：王秀兰" />
+        <label>第一剂开始喝的日子</label>
+        <input id="p-start" type="date" />
+        <div class="row2">
+          <div>
+            <label>一剂喝几天</label>
+            <input id="p-days" type="number" min="1" step="1" value="1" />
+          </div>
+          <div>
+            <label>一共几剂</label>
+            <input id="p-count" type="number" min="1" step="1" value="7" />
+          </div>
+        </div>
+        <button id="p-add">加入排期</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="alerts" class="alerts"></div>
+      <div class="panel">
+        <h2 style="margin-top:0">排期明细 <span class="legend">（黄色行 = 最近一次改动后受影响的剂；点日期可人工改期）</span></h2>
+        <div style="overflow:auto; max-height: 52vh">
+          <table>
+            <thead>
+              <tr>
+                <th>病人</th><th>剂</th><th>开喝日</th>
+                <th>抓药日（必须抓完）</th><th>送煎日（一炉）</th><th>取药日（一早）</th><th>排期说明</th>
+              </tr>
+            </thead>
+            <tbody id="doses-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h2 style="margin-top:0">代煎批次</h2>
+        <div style="overflow:auto">
+          <table>
+            <thead><tr><th>送煎下锅日</th><th>可取走日</th><th>入炉剂数</th><th>明细</th></tr></thead>
+            <tbody id="batches-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="edit-dialog">
+    <h2 style="margin-top:0">人工改期</h2>
+    <div id="edit-context" class="legend"></div>
+    <label>锁定环节</label>
+    <select id="edit-field">
+      <option value="gather">抓药日</option>
+      <option value="send">送煎日</option>
+      <option value="pickup">取药日</option>
+    </select>
+    <label>指定日期（若逢歇业，抓药锚点向后顺、其余向前挪，并注明原因）</label>
+    <input id="edit-date" type="date" />
+    <div class="row2" style="margin-top:10px">
+      <button id="edit-cancel" class="ghost">取消</button>
+      <button id="edit-save">保存并重算</button>
+    </div>
+    <button id="edit-clear" class="ghost" style="margin-top:6px">取消人工锁定，恢复自动排期</button>
+  </dialog>
+
+  <script type="module" src="/src/schedule-main.ts"></script>
+</body>
+</html>
